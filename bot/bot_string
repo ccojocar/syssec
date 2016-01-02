@@ -1,0 +1,377 @@
+ELF
+td
+td
+/lib/ld-linux.so.2
+GNU
+GNU
+]H
+)!
+dQ9
+B=
+libc.so.6
+_IO_stdin_used
+socket
+exit
+_IO_putc
+fopen
+gai_strerror
+strncmp
+__isoc99_sscanf
+connect
+strncpy
+time
+listen
+select
+fsync
+popen
+getpid
+fgets
+strlen
+getaddrinfo
+__errno_location
+bind
+read
+fclose
+bzero
+getenv
+stderr
+system
+pclose
+gethostname
+fwrite
+srandom
+fprintf
+accept
+sleep
+freeaddrinfo
+uname
+__libc_start_main
+snprintf
+__gmon_start__
+GLIBC_2.7
+GLIBC_2.1
+GLIBC_2.0
+ii
+ii
+ii
+h 
+h(
+h0
+% 
+h8
+%$
+h@
+%(
+hH
+%,
+hP
+%0
+hX
+%4
+h`
+%8
+hh
+%<
+hp
+%@
+hx
+%D
+%H
+%L
+%P
+%T
+%X
+%\
+%`
+%d
+%h
+%l
+%p
+%t
+%x
+%|
+h 
+h(
+h0
+h8
+h@
+hH
+PTRh
+QVh
+t&
+Ph
+t&
++E
+PR
+9E
+<st
+<et
+<ct
+<rt
+<et
+<tt
+h O
++E
+QRP
+;E
+h O
+Ph
+Mb
+jn
+jj
+RP
+jn
+yD
+Rh
+L$
+WVSQ
+Ph'
+y6
+Rh>
+Qj
+RP
+t1
+RhJ
+QRP
+QRP
+y6
+Rh[
+h O
+y6
+Rhr
+jn
+jjh O
+jn
+y6
+Rh
+RP
+u!
+Pj
+y6
+Rh
+<.t
+j@
+j	h
+uM
+u:
+Rh
+;E
+;E
+t@
+h 
+9E
+9E
+Y[^_]
+UWVS
+l$ 
+t%1
+t$,
+t$,U
+[^_]
+SUCCESS.
+FAILED.
+One will fall, but others will rise. Hasta la vista.
+Who should fight whom?
+I will just watch!
+Could not find the opponent.
+Two bots enter, one bot leaves.
+I attacked...
+Got attacked when unprepared...
+A tie, how neat.
+I win, I live...
+I lose, oh nooooooooooo...
+Do you see a change? You may have to try a few times.
+Hello Botmaster, I'm %s. What will your first sequence of the day be?
+I'm %s and I'm reporting for duty.
+Greetings master, I'm %s, you are the one to rule them all.
+I %s, you botmaster.
+Huh?
+What you say?
+These are not the commands you are looking for.
+/bin/ps -a
+/tmp/tmp_bot_image.png
+zsh -c "qiv -i -f /tmp/tmp_bot_image.png &; sleep .4; pkill qiv; rm /tmp/tmp_bot_image.png"
+%s: %s
+bot-%i
+connect: %s
+Usage: %s [IP] [Port]
+socket: %s
+getaddrinfo: %s
+Could not connect: %s
+unix socket: %s
+select: %s
+Chatroom is closed.
+read: %s
+bot-
+info
+USER
+%s, %s, %s, %s, %s
+processes
+flash
+kill
+fight
+bot-%i bot-%i
+;x
+zR
+;*2$"
+up
+u|
+ux
+ut
+ i
+$D
+(D
+,A
+0M
+ G
+oT
+GCC: (GNU) 5.2.0
+.symtab
+.strtab
+.shstrtab
+.interp
+.note.ABI-tag
+.note.gnu.build-id
+.gnu.hash
+.dynsym
+.dynstr
+.gnu.version
+.gnu.version_r
+.rel.dyn
+.rel.plt
+.init
+.text
+.fini
+.rodata
+.eh_frame_hdr
+.eh_frame
+.init_array
+.fini_array
+.jcr
+.dynamic
+.got
+.got.plt
+.data
+.bss
+.comment
+ O
+init.c
+crtstuff.c
+__JCR_LIST__
+deregister_tm_clones
+register_tm_clones
+__do_global_dtors_aux
+completed.6553
+__do_global_dtors_aux_fini_array_entry
+frame_dummy
+__frame_dummy_init_array_entry
+bot.c
+__FRAME_END__
+__JCR_END__
+__init_array_end
+_DYNAMIC
+__init_array_start
+_GLOBAL_OFFSET_TABLE_
+__libc_csu_fini
+func3
+func5
+func1
+read@@GLIBC_2.0
+_ITM_deregisterTMCloneTable
+__x86.get_pc_thunk.bx
+data_start
+srandom@@GLIBC_2.0
+printf@@GLIBC_2.0
+stderr@@GLIBC_2.0
+fd
+unknown_msgs
+bzero@@GLIBC_2.0
+fgets@@GLIBC_2.0
+tiestr
+_edata
+fclose@@GLIBC_2.1
+time@@GLIBC_2.0
+theme_cmds
+sleep@@GLIBC_2.0
+select@@GLIBC_2.0
+unknown_msgs_size
+welcome_msgs
+_fini
+uname@@GLIBC_2.0
+theme_cmd1
+popen@@GLIBC_2.1
+failstr
+unclearfightstr
+theme_cmd3
+_IO_putc@@GLIBC_2.0
+enccmdstr
+accept@@GLIBC_2.0
+fwrite@@GLIBC_2.0
+fightstr
+changestr
+getpid@@GLIBC_2.0
+gethostname@@GLIBC_2.0
+getenv@@GLIBC_2.0
+__data_start
+theme_cmds_size
+system@@GLIBC_2.0
+strerror@@GLIBC_2.0
+welcome_msgs_size
+__gmon_start__
+exit@@GLIBC_2.0
+__dso_handle
+pclose@@GLIBC_2.1
+_IO_stdin_used
+func4
+strlen@@GLIBC_2.0
+fsync@@GLIBC_2.0
+__libc_start_main@@GLIBC_2.0
+fprintf@@GLIBC_2.0
+write@@GLIBC_2.0
+func2
+func0
+succstr
+__libc_csu_init
+bind@@GLIBC_2.0
+__isoc99_sscanf@@GLIBC_2.7
+fopen@@GLIBC_2.1
+func6
+snprintf@@GLIBC_2.0
+pickfillandsend
+sendback
+_end
+__errno_location@@GLIBC_2.0
+strncpy@@GLIBC_2.0
+_start
+_fp_hw
+gai_strerror@@GLIBC_2.1
+__bss_start
+main
+notfoundstr
+theme_cmd0
+encsuccstr
+nofightstr
+freeaddrinfo@@GLIBC_2.0
+listen@@GLIBC_2.0
+winstr
+theme_cmd4
+theme_cmd2
+_Jv_RegisterClasses
+killstr
+pickandsend
+bot_image
+unpreparedstr
+socket@@GLIBC_2.0
+getaddrinfo@@GLIBC_2.0
+__TMC_END__
+losestr
+_ITM_registerTMCloneTable
+strncmp@@GLIBC_2.0
+random@@GLIBC_2.0
+own_name
+attackstr
+connect@@GLIBC_2.0
+_init
+bot_image_size
+close@@GLIBC_2.0
+@	

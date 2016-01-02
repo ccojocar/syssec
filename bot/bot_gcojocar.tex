@@ -1,0 +1,442 @@
+% IMPORTANT: add or remove (comment out) the boolean '\solutiontrue' below to
+% create the solution document or the exercise document respectively.
+% First we create the switch to make either the exercises or the solutions
+\newif\ifsolution\solutionfalse
+% To create the solution uncomment '\solutiontrue'
+\solutiontrue
+
+\documentclass[a4paper,11pt]{article}
+\title{System Security,
+\ifsolution Solution \else \fi
+Bot Analysis}
+
+
+\include{author}
+
+\usepackage[T1]{fontenc}
+\usepackage{ae, aecompl}
+\usepackage{a4wide}
+\usepackage{boxedminipage}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{alltt}
+\usepackage{hyperref}
+
+% Some useful commands and environments
+\usepackage{framed}
+\newenvironment{solution}%
+{\par{\noindent\small\textit{Solution:}}\vspace{-12pt}\begin{framed}}%
+{\end{framed}\par}
+
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+    frame=single,
+    breaklines=true,
+    postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\color{red}\hookrightarrow\space}}
+}
+
+%% tty - for displaying TTY input and output
+\newenvironment{tty}%
+{\small\begin{alltt}}%
+{\end{alltt}}
+
+\begin{document}
+\maketitle
+
+In this exercise you will reverse engineer a bot. Bots that are part of a botnet
+can be controlled by a botmaster in various ways. In this case the botmaster
+uses a chatroom to communicate with one or more bots. Your task is to find the
+commands that the botmaster can use and that the bot understands. 
+
+We recommend that you run the bot inside the provided VM. This way things will
+work as expected and you are protected from possible vulnerabilities of the bot.
+The folder \texttt{bot} contains the bot's executable.
+
+\begin{enumerate}
+\item Start the chatroom by running \verb|python2 chatroom.py|. By
+default the chatroom will listen for local connections on port 4567. It simply
+forwards all messages it receives to all connected parties.
+\item Run the chatclient using \verb|python2 chatclient.py|. The client will
+be your interface to the chatroom. It allows you to send commands and receive
+output.
+\item Start the bot, e.g. by running \verb|./bot 127.0.0.1 4567|. This way the
+bot will connect to the chatroom. You should see a greeting message from the bot
+in your chat client.
+\end{enumerate}
+
+Reverse Engineering can be done in different ways. Among variations there are
+black- and white-box approaches. In black-box approaches the externally
+observable data is used. It often provides a good start. Good tools for
+black-box analysis are \texttt{strings}, \texttt{strace}, \texttt{lsof},
+\texttt{ps}, \texttt{netstat} or \texttt{wireshark}. Especially \texttt{strings}
+might be useful for you as it extracts readable strings from the executable.
+
+\subsubsection*{How does the bot communicate with the chat room? Using TCP or
+UDP? Is the transmission encoded or encrypted? How did you find these answers?}
+\ifsolution
+\begin{solution}
+The bot communicates with the chat room using TCP. The chat room forwards all messages it receive 
+to the bot. The bot replies back to the port \texttt{4567} of the chat room.
+\begin{lstlisting}
+% netstat -ap  | grep bot   
+(Not all processes could be identified, non-owned process info
+ will not be shown, you would have to be root to see it all.)
+tcp        0      0 localhost.localdo:47170 localhost.localdom:tram ESTABLISHED 3874/./bot          
+\end{lstlisting}
+
+Using Wireshark one can verify if the transmission is encoded or encrypted by sending a text 
+message from chat client. The network traffic captured by Wireshark for  text "test" is the 
+following:
+
+\begin{lstlisting}
+chat client sends "test" -> chat room 
+47169->4567
+...
+Data (4 bytes)
+
+0000  74 65 73 74     test
+    Data: 74657374
+    [Length: 4]
+
+char room forwards "test" -> bot
+4567->47170
+...
+Data (4 bytes)
+
+0000  74 65 73 74    test
+    Data: 74657374
+    [Length: 4]
+
+boot sends "bot-3874: Huh?" -> chat room 
+47170->4567
+
+...
+Data (14 bytes)
+
+0000  62 6f 74 2d 33 38 37 34 3a 20 48 75 68 3f         bot-3874: Huh?
+    Data: 626f742d333837343a204875683f
+    [Length: 14]
+
+chat room forwards "bot-3874: Huh?" -> chat client
+4567->47169
+...
+Data (14 bytes)
+
+0000  62 6f 74 2d 33 38 37 34 3a 20 48 75 68 3f         bot-3874: Huh?
+    Data: 626f742d333837343a204875683f
+    [Length: 14]
+\end{lstlisting} 
+
+It appears that the messages are sent in clear text. 
+
+\end{solution}\fi
+
+
+
+White-box approaches use introspection of the program, e.g. using a debugger.
+However, this can be a very time-consuming task. As your task is to identify the
+bot commands you do not have to analyse the whole program. Think about where the
+received commands will be handled. If you are unfamiliar with network sockets
+check which function is used to receive the
+data~\footnote{\url{https://en.wikipedia.org/wiki/Berkeley_sockets}}.
+
+You can either set a breakpoint directly after the data is received or attach to
+the process when the bot is waiting for new commands and then continue stepping
+through the program to observe the data handling.
+
+\subsubsection*{Which function is used to receive possible commands? What is its
+address in the code, e.g. \texttt{0x08040000}?}
+\ifsolution
+\begin{solution}
+The bot uses the \texttt{select} function to wait for incoming data on the
+socket descriptor opened with the chat room. Its address in the code is 
+\texttt{0x08049535}.
+
+\end{solution}\fi
+
+
+Now you have to understand which commands are accepted by the bot. Check how the
+commands are filtered and parsed. Once you think you found a command try it and
+observe its functionality.
+
+\subsubsection*{Which commands does the bot accept? List their names, their
+functionality, describe the output and provide possibly used files. You should
+understand at least four commands.}
+
+\ifsolution
+\begin{solution}
+\begin {itemize} 
+\item \textbf{.info}
+
+\emph{Functionality:}
+
+It collects more information about the system by executing 
+the following system calls:
+
+\begin{itemize}
+\item \textbf{gethostname}: to access the host name ("syssecvm")
+\item \textbf{uname}: to gather information such as operating system name ("Linux"), operating system release ("4.1.6-1-ARCH") and hardware identifier ("i686")
+\item \textbf{getenv}(USER): to read the USER environment variable ("syssec")
+\end{itemize}
+
+\emph{Output:}
+
+\verb|bot-696: syssec, syssecvm, Linux, 4.1.6-1-ARCH, i686|
+
+\item \textbf{.processes}
+
+\emph{Functionality:}
+
+It executes the command \texttt{/bin/ps -a} which lists a snapshots of the running processes.
+
+\emph{Output:}
+
+\begin{lstlisting}
+bot-696: 
+  PID TTY          TIME CMD
+  653 pts/0    00:00:00 python2
+  675 pts/2    00:00:00 python2
+  696 pts/1    00:00:00 bot
+  860 pts/3    00:00:00 sudo
+  861 pts/3    00:00:03 gdb
+ 1088 pts/1    00:00:00 ps
+\end{lstlisting}
+
+\item \textbf{.flash}
+
+\emph{Functionality:}
+
+This command displays shortly an image with the text \verb|"You got hacked !!! Hahaha!"|. In order to 
+achieve this, it executes the following script:  
+
+\verb|zsh -c "qiv -i -f /tmp/tmp_bot_image.png &; sleep .4; pkill qiv; rm /tmp/tmp_bot_image.png"|
+
+\emph{Output:}
+
+\verb|bot-696: SUCCESS.|
+
+\item \textbf{.kill}
+
+\emph{Functionality:}
+
+This command terminates the \texttt{bot} process. 
+
+\emph{Output:}
+
+\verb|bot-696: One will fall, but others will rise. Hasta la vista.|
+
+\item \textbf{.fight}
+
+\emph{Functionality:}
+
+This command makes two bots to fight with each other. 
+
+\emph{Output:}
+
+\verb|.fight bot-4702 bot-4701|
+
+\begin{lstlisting}
+[+] bot-4701: I bot-4701, you botmaster.
+[+] bot-4702: I bot-4702, you botmaster.
+Sent: .fight bot-4702 bot-4701
+[+] bot-4701: Two bots enter, one bot leaves.
+[+] bot-4702: Two bots enter, one bot leaves.
+[+] bot-4701: I attacked...
+[+] bot-4702: I attacked...
+[+] bot-4701: I win, I live...
+[+] bot-4702: I lose, oh nooooooooooo...
+\end{lstlisting}
+
+\end{itemize}
+
+\end{solution}\fi
+
+\subsection*{Advanced Questions}
+Know we get to more advanced questions. Getting the best possible grade requires
+solving these, however they might be quite time-consuming.
+
+\subsubsection*{There are certain commands, that do not show up in the output of
+\texttt{strings}. Why?}
+\ifsolution
+\begin{solution}
+There are commands which do not show in the \texttt{strings} output because either are encoded or the command verification takes place byte by byte without keeping in memory a contiguous string representation of the entire command. %
+\end{solution}\fi
+
+
+\subsubsection*{Which kind of messages are filtered out first by the bot? Can
+you imagine why?}
+
+\ifsolution
+\begin{solution}
+The bot filters out all commands which do not begin with a \texttt{dot(".")}. The goal of this filtering is to prevent a brute force verification of all strings that show up in the output of \texttt{strings} command. This approach makes more difficult the reverse engineering of the commands, because the bot application must be disassembled and debugged.
+\end{solution}\fi
+
+
+\subsubsection*{How does a bot generate its name, it uses in the chatroom?}
+\ifsolution
+\begin{solution}
+The bot generates its name at startup by concatenating the string \texttt{"bot-"} with the PID of the bot process. The resulted bot name is stored in a global variable. The PID is retrieved by using the system call \texttt{getpid}. 
+
+\end{solution}\fi
+
+\subsubsection*{Which other commands can you find? Describe how you found them,
+how the bot parses them, and their functionality.}
+
+\ifsolution
+\begin{solution}
+\begin{itemize}
+\item \textbf{.secret}
+
+\emph{Reverse Engineering:}
+
+I sent from the chat client a random string beginning with a dot, while the \texttt{gdb} debugger was attached to the bot process and a break point was set after the \texttt{select} call. Then I debugged step by step through all checks that use \texttt{strncmp} function. At the end of these unsuccessful checks the function \texttt{func3} was called which compares character by character the received string against a predefined string. By analysing the assembly code, I extracted the predefined string \textbf{secret}.   
+
+\emph{Functionality:}
+
+It changes the theme of the window manager by executing the following command
+
+ \verb|xfconf-query -c xsettings -p /Net/ThemeName -s \"Xfce-dusk\"|
+
+\emph{Output:}
+
+\verb|[+] bot-1585: Do you see a change? You may have to try a few times.|
+
+\newpage
+\item \textbf{.e4stere66!1}
+
+\emph{Reverse Engineering:}
+
+I sent from the chat client a random string beginning with a dot, while the \texttt{gdb} debugger was attached to the bot process and a break point was set after the \texttt{func3} call. Then I debugged step by step until the beginning of function \texttt{func2}. In this function, I debugged further the first iteration of the loop which decodes a predefined string, and I analysed carefully the decoding procedure. The decoding method performed a \texttt{xor} operation between a fixed value \texttt{0xffffff81} and each encoded byte.  
+
+I was finally able to extract the encoded string from memory and to decode it byte by byte as follows:
+
+  \emph{encoded:} \texttt{0xe4  0xb5  0xf2  0xf5  0xe4  0xf3  0xe4  0xb7  0xb7  0xa0  0xb0  0x00}
+
+   \centerline{\emph{xor}}  
+
+   \emph{mask:} \texttt{0x81  0x81  0x81  0x81  0x81  0x81  0x81  0x81  0x81  0x81  0x81  0x81}
+
+    \centerline{=}     
+   
+   \emph{decoded:} \texttt{0x65  0x34  0x73  0x74  0x65  0x72  0x65  0x36  0x36  0x21  0x31   0}
+
+   
+   \emph{ASCII:}\texttt{ e     4     s     t     e     r    e     6      6    !     1}
+
+
+\emph{Functionality:}
+
+It sends back to the chat client the string \emph{Congrats, you found the easteregg. Document how you found it and the command for extra points}.
+
+\emph{Output:}
+
+\verb|[+] bot-3722: Congrats, you found the easteregg. Document how you found it and the command for extra points.|
+
+\end{itemize}
+\end{solution}\fi
+
+\subsubsection*{The bots can enter into some form of ``conflict''. How do they
+communicate? What is therefore required for two bots to communicate? How do they
+find a winner?}
+
+\ifsolution
+\begin{solution}
+The bots communicate using a UNIX domain socket (IPC socket). They need to know a path name which identifies the UNIX domain socket.
+
+The bots use file descriptor 6 to communicate with each other. It can be observed in the trace bellow that this file descriptor is a UNIX domain socket.
+
+\begin{lstlisting}
+sudo strace -p 8108
+Process 8108 attached
+select(6, [4 5], NULL, NULL, NULL)      = 1 (in [4])
+read(4, ".fight bot-8106 bot-8108", 4096) = 24
+write(4, "bot-8108: Two bots enter, one bo"..., 41) = 41
+fsync(4)                                = -1 EINVAL (Invalid argument)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({1, 0}, 0xbfffadbc)           = 0
+socket(PF_LOCAL, SOCK_STREAM, 0)        = 6
+connect(6, {sa_family=AF_LOCAL, sun_path=@"bot-8106"}, 110) = 0
+write(6, "5\0\0\0", 4)                  = 4
+write(4, "bot-8108: I attacked...", 23) = 23
+fsync(4)                                = -1 EINVAL (Invalid argument)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({1, 0}, 0xbfffadbc)           = 0
+close(6)                                = 0
+select(6, [4 5], NULL, NULL, NULL)      = 2 (in [4 5])
+read(4, "bot-8106: Two bots enter, one bo"..., 4096) = 64
+select(6, [4 5], NULL, NULL, NULL)      = 2 (in [4 5])
+read(4, "bot-8106: I win, I live...", 4096) = 26
+select(6, [4 5], NULL, NULL, NULL)      = 1 (in [5])
+accept(5, 0, NULL)                      = 6
+read(6, "\332\3\0\0", 4)                = 4
+close(6)                                = 0
+write(4, "bot-8108: I lose, oh noooooooooo"..., 36) = 36
+fsync(4)                                = -1 EINVAL (Invalid argument)
+close(4)                                = 0
+close(5)                                = 0
+exit_group(0)                           = ?
+\end{lstlisting}
+
+The bots exchange two values \texttt{"332 3 0 0"} and respectively \texttt{"5 0 0 0"} as 
+can be seen in the trace bellow:
+
+\begin{lstlisting}
+sudo strace -e trace=read,write -e read=29,30 -e write=29,30 -p 8106
+[sudo] password for syssec: 
+Process 8106 attached
+^[[1;5Aread(4, ".fight bot-8106 bot-8108", 4096) = 24
+write(4, "bot-8106: Two bots enter, one bo"..., 41) = 41
+write(6, "\332\3\0\0", 4)               = 4
+write(4, "bot-8106: I attacked...", 23) = 23
+read(4, "bot-8108: Two bots enter, one bo"..., 4096) = 64
+read(6, "5\0\0\0", 4)                   = 4
+write(4, "bot-8106: I win, I live...", 26) = 26
+read(4, "bot-8108: I lose, oh noooooooooo"..., 4096) = 36
+\end{lstlisting}
+
+Then they use an algorithm to compare this value against some 
+thresholds. The winner will keep running while the looser 
+will terminate its execution. 
+
+The output of a combat is:
+\begin{lstlisting}
+Sent: .fight bot-6430 bot-6352
+[+] bot-6352: Two bots enter, one bot leaves.
+[+] bot-6430: Two bots enter, one bot leaves.
+[+] bot-6352: I attacked...
+[+] bot-6430: I attacked...
+[+] bot-6352: I win, I live...
+[+] bot-6430: I lose, oh nooooooooooo...
+\end{lstlisting}
+ 
+\end{solution}\fi
+
+\subsubsection*{Notes}
+\begin{itemize}
+\item Pasting into the chatclient might not work correctly. Try to add a space
+after pasting.
+\item When using gdb it can be helpful to use the \verb|layout asm| command.
+\item To understand the advanced features, it helps to know about
+select\footnote{\url{https://en.wikipedia.org/wiki/Select_\%28Unix\%29}}.
+\item Normally only the bot executable would run inside the VM, while the
+chatroom and chatclient would run on different machines. However, for this
+exercise it is fine to run all inside the VM. If you want to run the chatroom
+and chatclient outside the VM, you need to adjust the command line parameters of
+bot and possibly chatclient (see \verb|python2 chatclient.py --help|).
+\end{itemize}
+
+
+
+\begin{thebibliography}{---}
+\bibitem[1]{asm} Assembly Language for x86 Processors (6th Edition), Kip R. Irvine 
+\bibitem[2]{libc} The GNU C Library Manual, \url{http://www.gnu.org/software/libc/manual/}
+\end{thebibliography}
+
+\end{document}
+

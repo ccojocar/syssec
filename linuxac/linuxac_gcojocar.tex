@@ -1,0 +1,251 @@
+% IMPORTANT: add or remove (comment out) the boolean '\solutiontrue' below to
+% create the solution document or the exercise document respectively.
+% First we create the switch to make either the exercises or the solutions
+\newif\ifsolution\solutionfalse
+% To create the solution uncomment '\solutiontrue'
+\solutiontrue
+
+\documentclass[a4paper,11pt]{article}
+
+\title{System Security,
+\ifsolution Solution \else \fi
+Access Control}
+
+\include{author}
+
+\usepackage[T1]{fontenc}
+\usepackage{ae, aecompl}
+\usepackage{a4wide}
+\usepackage{boxedminipage}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{enumerate}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{comment}
+\usepackage{bibentry}
+
+\ifsolution\includecomment{final}
+\else\excludecomment{final}\fi
+
+% ------------ Listings Settings
+\lstset{%
+  basicstyle=\small\ttfamily,
+  frame=none,
+  framexleftmargin=0pt,
+  captionpos=b,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,         
+  tabsize=4,
+  breaklines=true,
+  breakatwhitespace=false}
+
+% Some useful commands and environments
+\usepackage{framed}
+\newenvironment{solution}%
+{\par{\noindent\small\textit{Solution:}}\vspace{-12pt}\begin{framed}}%
+{\end{framed}\par}
+
+\begin{document}
+\maketitle
+
+\ifsolution \else
+The folder \texttt{linuxac} inside the VM contains the contents for this exercise. 
+\fi
+
+\section{Unix Access Control}
+\paragraph{a.} (Exercise 4.5 from book \cite{book}) Unix treats file directories
+in the same fashion as files; that is, both are defined by the same type of data
+structure, called an inode. As with files, directories include a nine-bit
+protection string.  Before you answer the following questions, make sure you
+know what each of these nine bits represent and what their effect on files and
+directories is.  If care is not taken, this can create access control problems.
+
+For example, consider a file owned by user A with protection mode 644 (octal)
+contained in a directory with protection mode 777. How can user B compromise
+this file in a somewhat unexpected way? Name a scenario that user B could use
+the compromise for.
+
+
+\ifsolution\begin{solution}
+The user B can remove or rename the file using the commands rm and respectively mv. This is possible because these file operations need the write and the execute permissions only on the parent directory. The permissions of the file itself are irrelevant. 
+\end{solution}\fi
+\paragraph{b.} Given the following table of UNIX directory/file permissions,
+\begin{table}[ht]
+\centering  % used for centering table
+\begin{tabular}{l c l l} % centered columns (4 columns)
+\hline\hline                        %inserts double horizontal lines
+Directory & Permissions & Owner & Group \\ [0.5ex] % inserts table 
+%heading
+\hline                  % inserts single horizontal line
+/ & rwx,r-x,r-x & root & root  \\ % inserting body of the table
+/home &  rwx,r-x,r-x & root & root  \\
+/home/capkun &  rwx,r-x,--x & capkun & faculty  \\
+/home/capkun/syssec &  rwx,rwx,--x& capkun & syssec\_admin \\
+/home/capkun/syssec/exercises & rwx,rwx,r-x & rmasti & syssec\_admin\\
+/home/capkun/syssec/exams & rwx,rwx,--- & capkun & syssec\_admin\\
+/home/capkun/syssec/grades & rwx,---,--- & capkun & nobody\\
+/home/capkun/syssec/team1 & rwx,--x,--x & rmasti & nobody \\
+/home/capkun/syssec/team1/exercise1 & r-x,rwx,--x & thomas & team1 \\
+/home/capkun/syssec/team1/exercise1/results & r-x,rwx,--- & markus & team1 \\ [1ex]      % [1ex] adds vertical space
+\hline %inserts single line
+\end{tabular}
+%\caption{team1-ext = team1$\cap$syssec\_admin}
+\label{table:nonlin} % is used to refer this table in the text
+\end{table}
+and assuming that in what follows a string \emph{group.username} denotes a user with username \emph{username} and group identity \emph{group}:
+
+\begin{itemize}
+\item [(a)] Would nobody.thomas be able to create a directory ``exercise2'' under
+/home/capkun/syssec/team1/? 
+What can you infer about the creation of directory ``exercise1'' ? 
+\item [(b)] Given that a user \emph{group}.markus created ``results'' without a problem, what can you infer about \emph{group} ? 
+\item [(c)] Which of the following commands will succeed when executed
+individually?(True/False) Please, briefly justify your answers for the ones that fail.
+\begin{enumerate}
+\item rmasti: echo "grades 2012" >  /home/capkun/syssec/grades/grades2012.txt
+\item nobody.matthias: ls /home/capkun/syssec/exercises
+\item syssec\_admin.ellia: echo "exercise1">/home/capkun/syssec/exercises/ex1.txt
+\item syssec\_admin.ellia: chmod 007 /home/capkun/syssec/exercises/
+\item nobody.rmasti: chmod 007 /home/capkun/syssec/exercises/
+\item team2.matthias: ls /home/capkun/syssec/team1/exercise1/results
+\item nobody.rmasti: rm /home/capkun/syssec/team1/exercise1/results/*
+\item nobody.christina: touch /home/capkun/syssec/exams/exam2012.txt
+\item faculty.johnson: ls  /home/capkun/syssec/exams 
+\end{enumerate}
+Given that thomas has read access to /home/capkun/syssec/exercises/*:
+\begin{enumerate}
+\addtocounter{enumi}{9}
+\item nobody.thomas: cp /home/capkun/syssec/exercises/* 
+\begin{flushright}/home/capkun/syssec/team1/exercise1/\end{flushright}
+\item team1.thomas: cp /home/capkun/syssec/exercises/*  
+\begin{flushright}/home/capkun/syssec/team1/exercise1/\end{flushright}
+\end{enumerate}
+\end{itemize}
+
+\ifsolution\begin{solution}
+\begin{itemize}
+\item [(a)] "nobody.thomas" would not be able to create any directory within /home/capkun/syssec/team1/. The execute permission for group "nobody" only 
+allows him to enter the folder using the command \emph{cd}.  
+\item [(b)] The \emph{group} is "team1", because only members of group "team1" have write permission on directory "exercise1".
+\item [(c)]
+\begin{enumerate}
+\item False: Only user "capkun" has write permission on directory "grades".
+\item True
+\item True
+\item False: Only the owner "rmasti" of the directory "exercises", or the root user, may change the permissions.
+\item True
+\item False: "team2.matthias" belongs to the \emph{other} category, which has no permissions on folder "results".
+\item False: Only members of group "team1" can remove the content of directory "results".
+\item False: Only user "capkun" or members of group "syssec\_admin" can create a file in directory "exams".
+\item False: Only user "capkun" or members of group "syssec\_admin" have read permission on folder "exams".
+\item False: The user "nobody.thomas" does not have write permission to folder "exercise1", and therefore he cannot copy any files into this folder.
+\item False: The owner "thomas" does not have write permission even though his \emph{group} "team1" has. The Linux's ACL uses only one set of \emph{rwx} bits when evaluating the permissions. The \emph{owner} permissions take precedence over 
+\emph{group} permissions which take precedence over \emph{other}. This scenario is rather a corner case than a security measure, because the owner "thomas" can change anyhow the permissions of directory "exercise1" using the command \emph{chmod}. 
+\end{enumerate}
+\end{itemize}
+
+\end{solution}\fi
+\section{Permission Delegation: setuid, sudo, su}
+\begin{enumerate}[(a)]
+\item What is the difference between the sudo and su commands in Linux? Which would
+you use to enable temporary root access and why?
+\ifsolution\begin{solution}
+The \emph{su} command switches to the root user account by requiring the root account's password when executed without additional arguments. It offers also the possibility to switch to any user account, if a user name is provided as argument \emph{su - username}, it prompts for user's password.   
+
+The \emph{sudo} command runs a single command with root privileges, on behalf of authorized users. The users need to provide only their own password in order to be able to execute any command with the same privileges as root.  
+
+The sudo command is more suitable for temporary root access because does not require the root's password. Another advantage is that it discourage users from logging in as root in order to get a root's shell to do their normal work. Running fewer commands as root increase security and prevents system-wide changes.
+
+\end{solution}\fi
+
+\item Which users can ``sudo'' on a Linux system? 
+\ifsolution
+\begin{solution}
+
+Any user defined in \verb|/etc/sudoers| file gains full root privileges when preceding a command with sudo. For instance, the following entry grants to "user" the root's rights: 
+\begin{lstlisting}
+user   ALL=(ALL) ALL
+\end{lstlisting}
+
+Another option is to allow all members of the group \emph{sudo} to execute commands with root privileges: 
+\begin{lstlisting}
+%sudo ALL=(ALL) ALL
+\end{lstlisting}
+
+\end{solution}\fi
+
+\item In the VM we have provided a script to setup the next test. Please run
+\texttt{acsetup.sh} as \textbf{root} (e.g. \verb|sudo ./acsetup.sh|). It will
+create a secret directory with a secret file:
+
+\begin{verbatim}
+mkdir -p /secret/root-only
+chmod go-rwx /secret/root-only
+echo "topsecret" > /secret/root-only/secret-file
+\end{verbatim}
+It creates a shell script /secret/script.sh (owner:root, group:root) with the
+content:
+\begin{verbatim}
+#!/bin/sh 
+echo "I am not root but can see this";
+ls -al /secret/root-only
+\end{verbatim}
+
+It makes script.sh readable and executable by all 
+(\verb|chmod o+rx /secret/script.sh|) and makes it setuid root 
+(\verb|chmod +s /secret/script.sh|).
+
+Now try to run script.sh without root access (e.g., using sudo) from a user
+account with sudo permissions, i.e., the user can run sudo in general but you
+do not use it here. What do you expect to see? What was the obtained output?
+Can you explain the result?
+
+\ifsolution\begin{solution}
+I would expect to see the content of \emph{root-only} directory, but the output returned by the script is the following:
+\begin{lstlisting}
+% /secret/script.sh
+
+I am not root but can see this
+ls: cannot open directory /secret/root-only: Permission denied
+\end{lstlisting}
+
+An explanation of this behavior is that Linux normally ignores \cite{setuid} the setuid bit on all executable files starting with a shebang (\verb|#!|) symbol, because it presents a high security risk.
+
+\end{solution}\fi
+
+\item As a sysadmin, think of a setup that allows a normal user to list the
+contents of \verb|/secret/root-only| without changing the file permissions. The
+setuid-bit should be used somewhere. How do you get such a setup? Try to follow
+the least privilege principle.
+
+\ifsolution
+\begin{solution}
+One can configure the setuid-bit on \verb|ls| command and then list the content of \verb|/secret/root-only| directory as follows:
+
+\begin{lstlisting}
+% sudo chmod +s /bin/ls
+
+% /secret/script.sh 
+I am not root but can see this
+total 12
+drwx------ 2 root root 4096 Nov  1 16:05 .
+drwxr-xr-x 3 root root 4096 Nov  1 16:05 ..
+-rw-r--r-- 1 root root   10 Nov  1 16:05 secret-file
+\end{lstlisting}
+
+\end{solution}\fi
+
+
+\end{enumerate}
+
+\begin{thebibliography}{---}
+\bibitem[1]{book} Computer Security: Principles and Practice. William Stallings and Laurie Brown, Prentice Hall, 2008
+\bibitem[2]{uid} How can I get setuid shell scripts to work, \url{http://www.faqs.org/faqs/unix-faq/faq/part4/section-7.html} 
+\bibitem[3]{setuid} Quick introduction to SUID, \url{http://www.techrepublic.com/blog/linux-and-open-source/quick-introduction-to-suid-what-you-need-to-know/}
+\end{thebibliography}
+
+
+\end{document}
+
